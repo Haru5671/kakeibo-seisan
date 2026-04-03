@@ -353,6 +353,42 @@
 
     .toast.show { transform: translateX(-50%) translateY(0); }
 
+    /* 削除確認モーダル */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: white;
+      border-radius: 20px;
+      padding: 28px 24px 20px;
+      max-width: 320px;
+      width: 100%;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+      text-align: center;
+      animation: modalPop 0.2s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes modalPop {
+      from { transform: scale(0.85); opacity: 0; }
+      to   { transform: scale(1);    opacity: 1; }
+    }
+    .modal .modal-icon { font-size: 36px; margin-bottom: 10px; }
+    .modal .modal-title { font-size: 15px; font-weight: 800; margin-bottom: 6px; color: var(--text); }
+    .modal .modal-desc { font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }
+    .modal .modal-desc strong { color: var(--text); font-weight: 700; }
+    .modal-buttons { display: flex; gap: 10px; }
+    .modal-buttons button { flex: 1; padding: 11px; border: none; border-radius: 50px; font-size: 14px; font-weight: 800; font-family: 'M PLUS Rounded 1c', sans-serif; cursor: pointer; transition: opacity 0.15s; }
+    .modal-buttons button:active { opacity: 0.8; }
+    .modal-btn-cancel { background: #f0f0f0; color: var(--muted); }
+    .modal-btn-delete { background: var(--danger); color: white; box-shadow: 0 3px 10px rgba(255,107,107,0.35); }
+
     @media (max-width: 400px) {
       .input-row { grid-template-columns: 1fr; }
     }
@@ -450,6 +486,19 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- 削除確認モーダル -->
+<div class="modal-overlay" id="deleteModal" onclick="closeDeleteModal(event)">
+  <div class="modal">
+    <div class="modal-icon">🗑️</div>
+    <div class="modal-title">削除しますか？</div>
+    <div class="modal-desc" id="deleteModalDesc">この項目を削除します。<br>元に戻すことはできません。</div>
+    <div class="modal-buttons">
+      <button class="modal-btn-cancel" onclick="closeDeleteModal()">キャンセル</button>
+      <button class="modal-btn-delete" onclick="confirmDelete()">削除する</button>
+    </div>
+  </div>
+</div>
 
 <script>
   // ---- State ----
@@ -574,14 +623,35 @@
     `;
   }
 
+  let pendingDeleteId = null;
+
   function deleteEntry(id) {
+    const entry = getData().find(e => e.id === id);
+    if (!entry) return;
+    pendingDeleteId = id;
+    document.getElementById('deleteModalDesc').innerHTML =
+      `<strong>${escHtml(entry.item)}</strong>（${entry.month}月・${formatMoney(entry.amount)}）<br>を削除します。元に戻せません。`;
+    document.getElementById('deleteModal').classList.add('show');
+  }
+
+  function confirmDelete() {
+    if (!pendingDeleteId) return;
+    const id = pendingDeleteId;
     const entries = getData().filter(e => e.id !== id);
     saveData(entries);
     const el = document.getElementById('entry-' + id);
     if (el) el.remove();
+    closeDeleteModal();
     showToast('削除しました');
     const activePage = document.querySelector('.page.active').id;
     if (activePage === 'page-summary') renderSummary();
+    pendingDeleteId = null;
+  }
+
+  function closeDeleteModal(event) {
+    if (event && event.target !== document.getElementById('deleteModal')) return;
+    document.getElementById('deleteModal').classList.remove('show');
+    pendingDeleteId = null;
   }
 
   // ---- Summary ----

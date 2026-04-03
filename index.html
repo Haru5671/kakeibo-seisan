@@ -3,74 +3,79 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>家計精算アプリ</title>
+  <title>おうち家計簿 🌼</title>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --primary: #5c7cfa;
-      --primary-dark: #4263eb;
-      --danger: #fa5252;
-      --success: #51cf66;
-      --bg: #f8f9fa;
-      --card: #ffffff;
-      --border: #dee2e6;
-      --text: #212529;
-      --muted: #868e96;
+      --primary: #FFD43B;
+      --primary-dark: #FFAA00;
+      --accent: #E67700;
+      --danger: #ff6b6b;
+      --success: #69db7c;
+      --bg: #FFFBEE;
+      --card: #FFFFFF;
+      --border: #FFE680;
+      --text: #3D2B00;
+      --muted: #B08040;
+      --on-primary: #3D2B00;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'M PLUS Rounded 1c', -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
     }
 
     header {
-      background: var(--primary);
-      color: white;
-      padding: 16px 20px;
+      background: linear-gradient(135deg, #FFD43B, #FFAA00);
+      color: var(--on-primary);
+      padding: 14px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      box-shadow: 0 3px 12px rgba(255,180,0,0.35);
     }
 
-    header h1 { font-size: 18px; font-weight: 700; }
+    header h1 { font-size: 18px; font-weight: 800; letter-spacing: 0.02em; }
     header .year-selector { display: flex; align-items: center; gap: 8px; }
     header .year-selector button {
-      background: rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.45);
       border: none;
-      color: white;
-      width: 28px;
-      height: 28px;
+      color: var(--on-primary);
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
       cursor: pointer;
-      font-size: 16px;
+      font-size: 17px;
       display: flex; align-items: center; justify-content: center;
+      font-weight: 700;
     }
-    header .year-selector button:hover { background: rgba(255,255,255,0.35); }
-    header .year-selector span { font-size: 16px; font-weight: 600; min-width: 50px; text-align: center; }
+    header .year-selector button:hover { background: rgba(255,255,255,0.65); }
+    header .year-selector span { font-size: 16px; font-weight: 800; min-width: 50px; text-align: center; }
 
     nav {
       display: flex;
       background: white;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 2px solid var(--border);
       position: sticky;
-      top: 57px;
+      top: 53px;
       z-index: 99;
     }
 
     nav button {
       flex: 1;
-      padding: 12px 8px;
+      padding: 11px 8px;
       border: none;
       background: none;
-      font-size: 13px;
-      font-weight: 500;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: 'M PLUS Rounded 1c', sans-serif;
       color: var(--muted);
       cursor: pointer;
       border-bottom: 3px solid transparent;
@@ -78,7 +83,7 @@
     }
 
     nav button.active {
-      color: var(--primary);
+      color: var(--accent);
       border-bottom-color: var(--primary);
     }
 
@@ -87,47 +92,52 @@
 
     .card {
       background: var(--card);
-      border-radius: 12px;
+      border-radius: 18px;
       padding: 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      margin-bottom: 14px;
+      box-shadow: 0 2px 10px rgba(255,180,0,0.1), 0 1px 3px rgba(0,0,0,0.04);
+      border: 1.5px solid #FFF3B0;
     }
 
     .card h2 {
-      font-size: 15px;
-      font-weight: 600;
+      font-size: 14px;
+      font-weight: 800;
       margin-bottom: 16px;
-      color: var(--primary);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     label {
       display: block;
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 11px;
+      font-weight: 700;
       color: var(--muted);
-      margin-bottom: 4px;
-      margin-top: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      margin-bottom: 5px;
+      margin-top: 13px;
+      letter-spacing: 0.06em;
     }
 
     label:first-child { margin-top: 0; }
 
     input, select {
       width: 100%;
-      padding: 10px 12px;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
+      padding: 11px 14px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
       font-size: 15px;
+      font-family: 'M PLUS Rounded 1c', sans-serif;
       color: var(--text);
-      background: white;
-      transition: border-color 0.15s;
+      background: #FFFDF5;
+      transition: border-color 0.15s, box-shadow 0.15s;
       -webkit-appearance: none;
     }
 
     input:focus, select:focus {
       outline: none;
-      border-color: var(--primary);
+      border-color: var(--primary-dark);
+      box-shadow: 0 0 0 3px rgba(255,212,59,0.25);
     }
 
     .input-row {
@@ -141,24 +151,29 @@
       width: 100%;
       padding: 13px;
       border: none;
-      border-radius: 8px;
+      border-radius: 50px;
       font-size: 15px;
-      font-weight: 600;
+      font-weight: 800;
+      font-family: 'M PLUS Rounded 1c', sans-serif;
       cursor: pointer;
       margin-top: 16px;
-      transition: opacity 0.15s;
+      transition: transform 0.12s, box-shadow 0.12s;
     }
 
-    .btn:active { opacity: 0.8; }
-    .btn-primary { background: var(--primary); color: white; }
-    .btn-danger { background: var(--danger); color: white; }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary {
+      background: linear-gradient(135deg, #FFD43B, #FFAA00);
+      color: var(--on-primary);
+      box-shadow: 0 4px 14px rgba(255,170,0,0.45);
+    }
+    .btn-primary:hover { box-shadow: 0 6px 18px rgba(255,170,0,0.55); }
+    .btn-danger { background: var(--danger); color: white; box-shadow: 0 3px 10px rgba(255,107,107,0.35); }
     .btn-sm {
       display: inline-block;
       width: auto;
-      padding: 4px 10px;
+      padding: 5px 14px;
       font-size: 12px;
       margin-top: 0;
-      border-radius: 6px;
     }
 
     /* 集計テーブル */
@@ -171,11 +186,12 @@
     .summary-table th {
       text-align: left;
       padding: 8px 10px;
-      font-size: 11px;
+      font-size: 10px;
       color: var(--muted);
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
       border-bottom: 2px solid var(--border);
+      letter-spacing: 0.06em;
     }
 
     .summary-table th:last-child { text-align: right; }
@@ -185,13 +201,13 @@
       border-bottom: 1px solid var(--bg);
     }
 
-    .summary-table td:last-child { text-align: right; font-weight: 600; }
+    .summary-table td:last-child { text-align: right; font-weight: 700; }
 
     .summary-table tr:last-child td { border-bottom: none; }
 
     .summary-table .total-row td {
-      font-weight: 700;
-      color: var(--primary);
+      font-weight: 800;
+      color: var(--accent);
       border-top: 2px solid var(--border);
       border-bottom: none;
       padding-top: 12px;
@@ -207,13 +223,13 @@
 
     .month-header h3 {
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 800;
     }
 
     .month-header .month-total {
       font-size: 14px;
-      font-weight: 700;
-      color: var(--primary);
+      font-weight: 800;
+      color: var(--accent);
     }
 
     .month-header .chevron {
@@ -232,42 +248,56 @@
       display: flex;
       align-items: center;
       padding: 10px 0;
-      border-bottom: 1px solid var(--bg);
+      border-bottom: 1px solid #FFF8D0;
       gap: 12px;
     }
 
     .entry-item:last-child { border-bottom: none; }
 
     .entry-badge {
-      background: var(--bg);
-      color: var(--primary);
+      background: #FFF3B0;
+      color: var(--accent);
       font-size: 11px;
-      font-weight: 600;
-      padding: 3px 8px;
+      font-weight: 800;
+      padding: 4px 9px;
       border-radius: 20px;
       white-space: nowrap;
+      border: 1px solid #FFE066;
     }
 
     .entry-info { flex: 1; min-width: 0; }
     .entry-info .name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .entry-info .meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
-    .entry-amount { font-size: 14px; font-weight: 700; white-space: nowrap; }
-    .entry-delete { color: var(--muted); background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px; line-height: 1; }
+    .entry-amount { font-size: 14px; font-weight: 800; white-space: nowrap; color: var(--accent); }
+    .entry-delete { color: #DDB080; background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px; line-height: 1; }
     .entry-delete:hover { color: var(--danger); }
 
     /* 年間精算カード */
     .settlement-card {
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      color: white;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 16px;
+      background: linear-gradient(135deg, #FFD43B 0%, #FFAA00 60%, #FF8C00 100%);
+      color: var(--on-primary);
+      border-radius: 20px;
+      padding: 22px 20px;
+      margin-bottom: 14px;
+      box-shadow: 0 6px 24px rgba(255,160,0,0.4);
+      position: relative;
+      overflow: hidden;
     }
 
-    .settlement-card h2 { font-size: 13px; opacity: 0.85; margin-bottom: 4px; }
-    .settlement-card .amount { font-size: 32px; font-weight: 700; margin: 4px 0 12px; }
-    .settlement-card .half { font-size: 13px; opacity: 0.85; }
-    .settlement-card .half span { font-size: 18px; font-weight: 700; }
+    .settlement-card::before {
+      content: '🌻';
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 52px;
+      opacity: 0.2;
+    }
+
+    .settlement-card h2 { font-size: 12px; font-weight: 700; opacity: 0.75; margin-bottom: 4px; }
+    .settlement-card .amount { font-size: 34px; font-weight: 800; margin: 4px 0 12px; }
+    .settlement-card .half { font-size: 13px; opacity: 0.8; font-weight: 700; }
+    .settlement-card .half span { font-size: 20px; font-weight: 800; }
 
     /* カテゴリ管理 */
     .tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
@@ -275,18 +305,20 @@
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      padding: 5px 10px;
+      background: #FFF8D0;
+      border: 1.5px solid #FFE066;
+      padding: 5px 12px;
       border-radius: 20px;
       font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
     }
-    .tag button { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 16px; line-height: 1; padding: 0; }
+    .tag button { background: none; border: none; cursor: pointer; color: #DDB080; font-size: 16px; line-height: 1; padding: 0; }
     .tag button:hover { color: var(--danger); }
 
     .add-category-row { display: flex; gap: 8px; }
     .add-category-row input { flex: 1; }
-    .add-category-row .btn { width: auto; flex-shrink: 0; padding: 10px 16px; }
+    .add-category-row .btn { width: auto; flex-shrink: 0; padding: 11px 18px; }
 
     /* エクスポート */
     .export-row { display: flex; gap: 8px; }
@@ -299,20 +331,24 @@
       font-size: 14px;
     }
 
-    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-state .icon { font-size: 44px; margin-bottom: 12px; }
 
     .toast {
       position: fixed;
-      bottom: 20px;
+      bottom: 24px;
       left: 50%;
       transform: translateX(-50%) translateY(100px);
-      background: #333;
+      background: var(--accent);
       color: white;
-      padding: 10px 20px;
-      border-radius: 20px;
+      padding: 11px 22px;
+      border-radius: 50px;
       font-size: 14px;
+      font-weight: 700;
+      font-family: 'M PLUS Rounded 1c', sans-serif;
       z-index: 999;
-      transition: transform 0.3s;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      box-shadow: 0 4px 16px rgba(230,119,0,0.4);
+      white-space: nowrap;
     }
 
     .toast.show { transform: translateX(-50%) translateY(0); }
@@ -325,7 +361,7 @@
 <body>
 
 <header>
-  <h1>💰 家計精算</h1>
+  <h1>🌼 おうち家計簿</h1>
   <div class="year-selector">
     <button onclick="changeYear(-1)">‹</button>
     <span id="currentYearLabel">2026</span>
@@ -334,7 +370,7 @@
 </header>
 
 <nav>
-  <button class="active" onclick="showPage('input', this)">＋ 入力</button>
+  <button class="active" onclick="showPage('input', this)">✏️ 入力</button>
   <button onclick="showPage('summary', this)">📊 集計</button>
   <button onclick="showPage('list', this)">📋 一覧</button>
   <button onclick="showPage('settings', this)">⚙️ 設定</button>
@@ -343,7 +379,7 @@
 <!-- 入力ページ -->
 <div id="page-input" class="page active">
   <div class="card">
-    <h2>支出を記録</h2>
+    <h2>🧾 支出を記録</h2>
     <div class="input-row">
       <div>
         <label>年月</label>
@@ -358,11 +394,11 @@
     <input type="text" id="inputItem" placeholder="例：スーパー、薬局...">
     <label>金額（円）</label>
     <input type="number" id="inputAmount" placeholder="0" min="0" inputmode="numeric">
-    <button class="btn btn-primary" onclick="addEntry()">登録する</button>
+    <button class="btn btn-primary" onclick="addEntry()">✨ 登録する</button>
   </div>
 
   <div class="card" id="recentCard">
-    <h2>最近の入力</h2>
+    <h2>🕐 最近の入力</h2>
     <div id="recentList"></div>
   </div>
 </div>
@@ -372,7 +408,7 @@
   <div class="settlement-card" id="settlementCard"></div>
 
   <div class="card">
-    <h2>カテゴリ別合計</h2>
+    <h2>🏷️ カテゴリ別合計</h2>
     <table class="summary-table" id="categoryTable"></table>
   </div>
 
@@ -383,7 +419,7 @@
 <div id="page-list" class="page">
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <h2 style="margin:0">全データ</h2>
+      <h2 style="margin:0">📋 全データ</h2>
       <div class="export-row">
         <button class="btn btn-primary btn-sm" onclick="exportCSV()">CSV出力</button>
       </div>
@@ -398,7 +434,7 @@
 <!-- 設定ページ -->
 <div id="page-settings" class="page">
   <div class="card">
-    <h2>カテゴリ管理</h2>
+    <h2>🎨 カテゴリ管理</h2>
     <div class="tag-list" id="categoryTags"></div>
     <div class="add-category-row">
       <input type="text" id="newCategoryInput" placeholder="新しいカテゴリ名">
@@ -407,7 +443,7 @@
   </div>
 
   <div class="card">
-    <h2>データ管理</h2>
+    <h2>🗑️ データ管理</h2>
     <p style="font-size:13px;color:var(--muted);margin-bottom:12px">全データを削除します。この操作は元に戻せません。</p>
     <button class="btn btn-danger" onclick="clearAllData()">全データを削除</button>
   </div>

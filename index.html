@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>家計精算アプリ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #5c7cfa;
+      --primary-dark: #4263eb;
+      --danger: #fa5252;
+      --success: #51cf66;
+      --bg: #f8f9fa;
+      --card: #ffffff;
+      --border: #dee2e6;
+      --text: #212529;
+      --muted: #868e96;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    header h1 { font-size: 18px; font-weight: 700; }
+    header .year-selector { display: flex; align-items: center; gap: 8px; }
+    header .year-selector button {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    header .year-selector button:hover { background: rgba(255,255,255,0.35); }
+    header .year-selector span { font-size: 16px; font-weight: 600; min-width: 50px; text-align: center; }
+
+    nav {
+      display: flex;
+      background: white;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 57px;
+      z-index: 99;
+    }
+
+    nav button {
+      flex: 1;
+      padding: 12px 8px;
+      border: none;
+      background: none;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.15s;
+    }
+
+    nav button.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .page { display: none; padding: 16px; max-width: 600px; margin: 0 auto; }
+    .page.active { display: block; }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .card h2 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--primary);
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 4px;
+      margin-top: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    label:first-child { margin-top: 0; }
+
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 15px;
+      color: var(--text);
+      background: white;
+      transition: border-color 0.15s;
+      -webkit-appearance: none;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: opacity 0.15s;
+    }
+
+    .btn:active { opacity: 0.8; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-sm {
+      display: inline-block;
+      width: auto;
+      padding: 4px 10px;
+      font-size: 12px;
+      margin-top: 0;
+      border-radius: 6px;
+    }
+
+    /* 集計テーブル */
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .summary-table th {
+      text-align: left;
+      padding: 8px 10px;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .summary-table th:last-child { text-align: right; }
+
+    .summary-table td {
+      padding: 10px 10px;
+      border-bottom: 1px solid var(--bg);
+    }
+
+    .summary-table td:last-child { text-align: right; font-weight: 600; }
+
+    .summary-table tr:last-child td { border-bottom: none; }
+
+    .summary-table .total-row td {
+      font-weight: 700;
+      color: var(--primary);
+      border-top: 2px solid var(--border);
+      border-bottom: none;
+      padding-top: 12px;
+    }
+
+    .month-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      padding: 4px 0;
+    }
+
+    .month-header h3 {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .month-header .month-total {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .month-header .chevron {
+      font-size: 12px;
+      color: var(--muted);
+      transition: transform 0.2s;
+    }
+
+    .month-header.collapsed .chevron { transform: rotate(-90deg); }
+
+    .month-detail { overflow: hidden; transition: max-height 0.2s; }
+    .month-detail.collapsed { max-height: 0 !important; }
+
+    /* エントリリスト */
+    .entry-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--bg);
+      gap: 12px;
+    }
+
+    .entry-item:last-child { border-bottom: none; }
+
+    .entry-badge {
+      background: var(--bg);
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .entry-info { flex: 1; min-width: 0; }
+    .entry-info .name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .entry-info .meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .entry-amount { font-size: 14px; font-weight: 700; white-space: nowrap; }
+    .entry-delete { color: var(--muted); background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px; line-height: 1; }
+    .entry-delete:hover { color: var(--danger); }
+
+    /* 年間精算カード */
+    .settlement-card {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .settlement-card h2 { font-size: 13px; opacity: 0.85; margin-bottom: 4px; }
+    .settlement-card .amount { font-size: 32px; font-weight: 700; margin: 4px 0 12px; }
+    .settlement-card .half { font-size: 13px; opacity: 0.85; }
+    .settlement-card .half span { font-size: 18px; font-weight: 700; }
+
+    /* カテゴリ管理 */
+    .tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 13px;
+    }
+    .tag button { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 16px; line-height: 1; padding: 0; }
+    .tag button:hover { color: var(--danger); }
+
+    .add-category-row { display: flex; gap: 8px; }
+    .add-category-row input { flex: 1; }
+    .add-category-row .btn { width: auto; flex-shrink: 0; padding: 10px 16px; }
+
+    /* エクスポート */
+    .export-row { display: flex; gap: 8px; }
+    .export-row .btn { margin-top: 0; }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #333;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 14px;
+      z-index: 999;
+      transition: transform 0.3s;
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 400px) {
+      .input-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>💰 家計精算</h1>
+  <div class="year-selector">
+    <button onclick="changeYear(-1)">‹</button>
+    <span id="currentYearLabel">2026</span>
+    <button onclick="changeYear(1)">›</button>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showPage('input', this)">＋ 入力</button>
+  <button onclick="showPage('summary', this)">📊 集計</button>
+  <button onclick="showPage('list', this)">📋 一覧</button>
+  <button onclick="showPage('settings', this)">⚙️ 設定</button>
+</nav>
+
+<!-- 入力ページ -->
+<div id="page-input" class="page active">
+  <div class="card">
+    <h2>支出を記録</h2>
+    <div class="input-row">
+      <div>
+        <label>年月</label>
+        <input type="month" id="inputMonth">
+      </div>
+      <div>
+        <label>カテゴリ</label>
+        <select id="inputCategory"></select>
+      </div>
+    </div>
+    <label>項目</label>
+    <input type="text" id="inputItem" placeholder="例：スーパー、薬局...">
+    <label>金額（円）</label>
+    <input type="number" id="inputAmount" placeholder="0" min="0" inputmode="numeric">
+    <button class="btn btn-primary" onclick="addEntry()">登録する</button>
+  </div>
+
+  <div class="card" id="recentCard">
+    <h2>最近の入力</h2>
+    <div id="recentList"></div>
+  </div>
+</div>
+
+<!-- 集計ページ -->
+<div id="page-summary" class="page">
+  <div class="settlement-card" id="settlementCard"></div>
+
+  <div class="card">
+    <h2>カテゴリ別合計</h2>
+    <table class="summary-table" id="categoryTable"></table>
+  </div>
+
+  <div id="monthlyAccordion"></div>
+</div>
+
+<!-- 一覧ページ -->
+<div id="page-list" class="page">
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h2 style="margin:0">全データ</h2>
+      <div class="export-row">
+        <button class="btn btn-primary btn-sm" onclick="exportCSV()">CSV出力</button>
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <input type="text" id="searchInput" placeholder="検索..." oninput="renderList()">
+    </div>
+    <div id="allList"></div>
+  </div>
+</div>
+
+<!-- 設定ページ -->
+<div id="page-settings" class="page">
+  <div class="card">
+    <h2>カテゴリ管理</h2>
+    <div class="tag-list" id="categoryTags"></div>
+    <div class="add-category-row">
+      <input type="text" id="newCategoryInput" placeholder="新しいカテゴリ名">
+      <button class="btn btn-primary" onclick="addCategory()">追加</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>データ管理</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">全データを削除します。この操作は元に戻せません。</p>
+    <button class="btn btn-danger" onclick="clearAllData()">全データを削除</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ---- State ----
+  let currentYear = new Date().getFullYear();
+
+  const DEFAULT_CATEGORIES = ['食費', '日用品', '衣服・美容', '医療・健康', '交通費', '娯楽・外食', '子ども', 'その他'];
+
+  function getData() {
+    return JSON.parse(localStorage.getItem('kakeibo_entries') || '[]');
+  }
+
+  function saveData(entries) {
+    localStorage.setItem('kakeibo_entries', JSON.stringify(entries));
+  }
+
+  function getCategories() {
+    const saved = localStorage.getItem('kakeibo_categories');
+    return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
+  }
+
+  function saveCategories(cats) {
+    localStorage.setItem('kakeibo_categories', JSON.stringify(cats));
+  }
+
+  function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2);
+  }
+
+  // ---- UI ----
+  function showPage(name, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    btn.classList.add('active');
+    if (name === 'summary') renderSummary();
+    if (name === 'list') renderList();
+    if (name === 'settings') renderSettings();
+    if (name === 'input') renderRecent();
+  }
+
+  function changeYear(delta) {
+    currentYear += delta;
+    document.getElementById('currentYearLabel').textContent = currentYear;
+    const activePage = document.querySelector('.page.active').id.replace('page-', '');
+    if (activePage === 'summary') renderSummary();
+    if (activePage === 'list') renderList();
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  function formatMoney(n) {
+    return '¥' + Number(n).toLocaleString();
+  }
+
+  // ---- Input ----
+  function initInputForm() {
+    const monthInput = document.getElementById('inputMonth');
+    const now = new Date();
+    monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    refreshCategorySelect();
+  }
+
+  function refreshCategorySelect() {
+    const sel = document.getElementById('inputCategory');
+    const cats = getCategories();
+    const current = sel.value;
+    sel.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+    if (current && cats.includes(current)) sel.value = current;
+  }
+
+  function addEntry() {
+    const month = document.getElementById('inputMonth').value;
+    const category = document.getElementById('inputCategory').value;
+    const item = document.getElementById('inputItem').value.trim();
+    const amount = parseInt(document.getElementById('inputAmount').value);
+
+    if (!month) return showToast('年月を選択してください');
+    if (!item) return showToast('項目を入力してください');
+    if (!amount || amount <= 0) return showToast('金額を入力してください');
+
+    const [year, mo] = month.split('-').map(Number);
+    const entries = getData();
+    entries.push({ id: generateId(), year, month: mo, category, item, amount });
+    saveData(entries);
+
+    document.getElementById('inputItem').value = '';
+    document.getElementById('inputAmount').value = '';
+    renderRecent();
+    showToast(`登録しました: ${item} ${formatMoney(amount)}`);
+  }
+
+  function renderRecent() {
+    const entries = getData()
+      .sort((a, b) => b.id.localeCompare(a.id))
+      .slice(0, 5);
+
+    const el = document.getElementById('recentList');
+    if (entries.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="icon">📝</div>まだ記録がありません</div>';
+      return;
+    }
+    el.innerHTML = entries.map(e => entryHtml(e)).join('');
+  }
+
+  function entryHtml(e) {
+    return `
+      <div class="entry-item" id="entry-${e.id}">
+        <span class="entry-badge">${e.category}</span>
+        <div class="entry-info">
+          <div class="name">${escHtml(e.item)}</div>
+          <div class="meta">${e.year}年${e.month}月</div>
+        </div>
+        <span class="entry-amount">${formatMoney(e.amount)}</span>
+        <button class="entry-delete" onclick="deleteEntry('${e.id}')" title="削除">×</button>
+      </div>
+    `;
+  }
+
+  function deleteEntry(id) {
+    const entries = getData().filter(e => e.id !== id);
+    saveData(entries);
+    const el = document.getElementById('entry-' + id);
+    if (el) el.remove();
+    showToast('削除しました');
+    const activePage = document.querySelector('.page.active').id;
+    if (activePage === 'page-summary') renderSummary();
+  }
+
+  // ---- Summary ----
+  function renderSummary() {
+    const entries = getData().filter(e => e.year === currentYear);
+    const total = entries.reduce((s, e) => s + e.amount, 0);
+
+    // Settlement card
+    document.getElementById('settlementCard').innerHTML = `
+      <h2>${currentYear}年 年間合計</h2>
+      <div class="amount">${formatMoney(total)}</div>
+      <div class="half">折半額: <span>${formatMoney(Math.ceil(total / 2))}</span></div>
+    `;
+
+    // Category totals
+    const catMap = {};
+    entries.forEach(e => {
+      catMap[e.category] = (catMap[e.category] || 0) + e.amount;
+    });
+    const sorted = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+
+    const catTable = document.getElementById('categoryTable');
+    if (sorted.length === 0) {
+      catTable.innerHTML = '<tr><td style="padding:20px;text-align:center;color:var(--muted)">データがありません</td></tr>';
+    } else {
+      catTable.innerHTML = `
+        <tr><th>カテゴリ</th><th>件数</th><th>金額</th></tr>
+        ${sorted.map(([cat, amt]) => {
+          const count = entries.filter(e => e.category === cat).length;
+          const pct = total > 0 ? Math.round(amt / total * 100) : 0;
+          return `<tr><td>${escHtml(cat)} <small style="color:var(--muted)">${pct}%</small></td><td style="color:var(--muted)">${count}件</td><td>${formatMoney(amt)}</td></tr>`;
+        }).join('')}
+        <tr class="total-row"><td colspan="2">合計</td><td>${formatMoney(total)}</td></tr>
+      `;
+    }
+
+    // Monthly accordion
+    const monthMap = {};
+    entries.forEach(e => {
+      if (!monthMap[e.month]) monthMap[e.month] = [];
+      monthMap[e.month].push(e);
+    });
+
+    const accordion = document.getElementById('monthlyAccordion');
+    accordion.innerHTML = Object.keys(monthMap)
+      .sort((a, b) => b - a)
+      .map(mo => {
+        const mes = monthMap[mo];
+        const mTotal = mes.reduce((s, e) => s + e.amount, 0);
+        const mCatMap = {};
+        mes.forEach(e => { mCatMap[e.category] = (mCatMap[e.category] || 0) + e.amount; });
+        const mSorted = Object.entries(mCatMap).sort((a, b) => b[1] - a[1]);
+        const uid = `month-${mo}`;
+
+        return `
+          <div class="card" style="margin-bottom:12px">
+            <div class="month-header" onclick="toggleMonth('${uid}')">
+              <h3>${mo}月</h3>
+              <div style="display:flex;align-items:center;gap:12px">
+                <span class="month-total">${formatMoney(mTotal)}</span>
+                <span class="chevron" id="chevron-${uid}">▼</span>
+              </div>
+            </div>
+            <div class="month-detail" id="${uid}" style="max-height:1000px">
+              <table class="summary-table" style="margin-top:12px">
+                <tr><th>カテゴリ</th><th>金額</th></tr>
+                ${mSorted.map(([cat, amt]) => `<tr><td>${escHtml(cat)}</td><td>${formatMoney(amt)}</td></tr>`).join('')}
+              </table>
+            </div>
+          </div>
+        `;
+      }).join('');
+  }
+
+  function toggleMonth(uid) {
+    const el = document.getElementById(uid);
+    const chevron = document.getElementById('chevron-' + uid);
+    const header = el.previousElementSibling;
+    const isCollapsed = el.classList.contains('collapsed');
+    if (isCollapsed) {
+      el.classList.remove('collapsed');
+      chevron.style.transform = '';
+      header.classList.remove('collapsed');
+    } else {
+      el.classList.add('collapsed');
+      chevron.style.transform = 'rotate(-90deg)';
+      header.classList.add('collapsed');
+    }
+  }
+
+  // ---- List ----
+  function renderList() {
+    const q = (document.getElementById('searchInput').value || '').toLowerCase();
+    const entries = getData()
+      .filter(e => e.year === currentYear)
+      .filter(e => !q || e.item.toLowerCase().includes(q) || e.category.toLowerCase().includes(q))
+      .sort((a, b) => (b.year * 100 + b.month) - (a.year * 100 + a.month) || b.id.localeCompare(a.id));
+
+    const el = document.getElementById('allList');
+    if (entries.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="icon">📋</div>データがありません</div>';
+      return;
+    }
+    el.innerHTML = entries.map(e => entryHtml(e)).join('');
+  }
+
+  // ---- Settings ----
+  function renderSettings() {
+    const cats = getCategories();
+    document.getElementById('categoryTags').innerHTML = cats.map(c => `
+      <span class="tag">
+        ${escHtml(c)}
+        <button onclick="removeCategory('${escHtml(c)}')" title="削除">×</button>
+      </span>
+    `).join('');
+  }
+
+  function addCategory() {
+    const input = document.getElementById('newCategoryInput');
+    const name = input.value.trim();
+    if (!name) return;
+    const cats = getCategories();
+    if (cats.includes(name)) return showToast('すでに存在します');
+    cats.push(name);
+    saveCategories(cats);
+    input.value = '';
+    renderSettings();
+    refreshCategorySelect();
+    showToast(`「${name}」を追加しました`);
+  }
+
+  function removeCategory(name) {
+    const cats = getCategories().filter(c => c !== name);
+    saveCategories(cats);
+    renderSettings();
+    refreshCategorySelect();
+    showToast(`「${name}」を削除しました`);
+  }
+
+  function clearAllData() {
+    if (!confirm('本当に全データを削除しますか？この操作は元に戻せません。')) return;
+    localStorage.removeItem('kakeibo_entries');
+    showToast('全データを削除しました');
+    renderSettings();
+  }
+
+  // ---- Export ----
+  function exportCSV() {
+    const entries = getData()
+      .filter(e => e.year === currentYear)
+      .sort((a, b) => (a.year * 100 + a.month) - (b.year * 100 + b.month));
+
+    if (entries.length === 0) return showToast('データがありません');
+
+    const rows = [['年', '月', 'カテゴリ', '項目', '金額'], ...entries.map(e => [e.year, e.month, e.category, e.item, e.amount])];
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `家計精算_${currentYear}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('CSVを出力しました');
+  }
+
+  // ---- Utils ----
+  function escHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // ---- Init ----
+  (function() {
+    const existing = localStorage.getItem('kakeibo_entries');
+    if (!existing || JSON.parse(existing).length === 0) {
+      const initialData = [{"id": "init0001", "year": 2025, "month": 1, "category": "ルカの費用", "item": "グッズ（どんぐり共和国）", "amount": 7150}, {"id": "init0002", "year": 2025, "month": 2, "category": "ルカの費用", "item": "ズボン（楽天）", "amount": 5593}, {"id": "init0003", "year": 2025, "month": 3, "category": "ルカの費用", "item": "ワッペン（楽天）", "amount": 4367}, {"id": "init0004", "year": 2025, "month": 4, "category": "ルカの費用", "item": "服（楽天）", "amount": 11385}, {"id": "init0005", "year": 2025, "month": 5, "category": "ルカの費用", "item": "ヘアゴム（楽天）", "amount": 1656}, {"id": "init0006", "year": 2025, "month": 6, "category": "ルカの費用", "item": "保冷バッグ（Amazon）", "amount": 2458}, {"id": "init0007", "year": 2025, "month": 7, "category": "ルカの費用", "item": "水着（楽天）", "amount": 2160}, {"id": "init0008", "year": 2025, "month": 8, "category": "ルカの費用", "item": "車のルカ用テーブル（楽天）", "amount": 3800}, {"id": "init0009", "year": 2025, "month": 9, "category": "ルカの費用", "item": "歯ブラシ（楽天）", "amount": 2080}, {"id": "init0010", "year": 2025, "month": 10, "category": "ルカの費用", "item": "帽子（楽天）", "amount": 2998}, {"id": "init0011", "year": 2025, "month": 11, "category": "ルカの費用", "item": "ベッドシーツ（楽天）", "amount": 2553}, {"id": "init0012", "year": 2025, "month": 12, "category": "ルカの費用", "item": "服（楽天）", "amount": 4810}, {"id": "init0013", "year": 2025, "month": 1, "category": "ルカの費用", "item": "グッズ（アンパンマンテラス）", "amount": 8658}, {"id": "init0014", "year": 2025, "month": 2, "category": "ルカの費用", "item": "歯ブラシ（楽天）", "amount": 1480}, {"id": "init0015", "year": 2025, "month": 3, "category": "ルカの費用", "item": "名前シール（楽天）", "amount": 1100}, {"id": "init0016", "year": 2025, "month": 4, "category": "ルカの費用", "item": "靴下名前しーる（楽天）", "amount": 2200}, {"id": "init0017", "year": 2025, "month": 5, "category": "ルカの費用", "item": "あわっぴーと入浴剤（Amazon）", "amount": 948}, {"id": "init0018", "year": 2025, "month": 6, "category": "ルカの費用", "item": "スティック日焼け止め2つ（Amazon）", "amount": 3560}, {"id": "init0019", "year": 2025, "month": 7, "category": "ルカの費用", "item": "ハキラ（Amazon）", "amount": 400}, {"id": "init0020", "year": 2025, "month": 8, "category": "ルカの費用", "item": "塗り絵（Amazon）", "amount": 1999}, {"id": "init0021", "year": 2025, "month": 9, "category": "ルカの費用", "item": "プリキュアライト（Amazon）", "amount": 980}, {"id": "init0022", "year": 2025, "month": 10, "category": "ルカの費用", "item": "ハキラ（Amazon）", "amount": 400}, {"id": "init0023", "year": 2025, "month": 11, "category": "ルカの費用", "item": "おむつ（Amazon）", "amount": 1227}, {"id": "init0024", "year": 2025, "month": 12, "category": "ルカの費用", "item": "レギンス（楽天）", "amount": 4860}, {"id": "init0025", "year": 2025, "month": 1, "category": "ルカの費用", "item": "ぬいぐるみ（名古屋水族館）", "amount": 950}, {"id": "init0026", "year": 2025, "month": 2, "category": "ルカの費用", "item": "入場料（mipig）", "amount": 2420}, {"id": "init0027", "year": 2025, "month": 3, "category": "ルカの費用", "item": "パンツ（楽天）", "amount": 3958}, {"id": "init0028", "year": 2025, "month": 4, "category": "ルカの費用", "item": "誕生日ケーキ（楽天）", "amount": 7779}, {"id": "init0029", "year": 2025, "month": 5, "category": "ルカの費用", "item": "泡粘土（Amazon）", "amount": 690}, {"id": "init0030", "year": 2025, "month": 6, "category": "ルカの費用", "item": "絵本3冊（Amazon）", "amount": 5445}, {"id": "init0031", "year": 2025, "month": 7, "category": "ルカの費用", "item": "きな粉（Amazon）", "amount": 2180}, {"id": "init0032", "year": 2025, "month": 8, "category": "ルカの費用", "item": "塗り絵2（Amazon）", "amount": 1999}, {"id": "init0033", "year": 2025, "month": 9, "category": "ルカの費用", "item": "ルテイン（Amazon）", "amount": 3800}, {"id": "init0034", "year": 2025, "month": 10, "category": "ルカの費用", "item": "車用ライト（Amazon）", "amount": 1698}, {"id": "init0035", "year": 2025, "month": 11, "category": "ルカの費用", "item": "机（Amazon）", "amount": 14099}, {"id": "init0036", "year": 2025, "month": 12, "category": "ルカの費用", "item": "ヘアミスト（楽天）", "amount": 2684}, {"id": "init0037", "year": 2025, "month": 1, "category": "ルカの費用", "item": "本（コーチャンフォー）", "amount": 2068}, {"id": "init0038", "year": 2025, "month": 2, "category": "ルカの費用", "item": "ベビーカー貸し出し（ディズニー）", "amount": 1000}, {"id": "init0039", "year": 2025, "month": 3, "category": "ルカの費用", "item": "服（楽天）", "amount": 6876}, {"id": "init0040", "year": 2025, "month": 4, "category": "ルカの費用", "item": "飾りつけ（楽天）", "amount": 2480}, {"id": "init0041", "year": 2025, "month": 5, "category": "ルカの費用", "item": "歯磨き粉（Amazon）", "amount": 988}, {"id": "init0042", "year": 2025, "month": 6, "category": "ルカの費用", "item": "ぬいぐるみ帽子（ディズニー）", "amount": 8020}, {"id": "init0043", "year": 2025, "month": 7, "category": "ルカの費用", "item": "あいうえおの本（Amazon）", "amount": 1200}, {"id": "init0044", "year": 2025, "month": 8, "category": "ルカの費用", "item": "あわっぴー（Amazon）", "amount": 1590}, {"id": "init0045", "year": 2025, "month": 9, "category": "ルカの費用", "item": "プレイロット（リポビタンキッズ）", "amount": 2700}, {"id": "init0046", "year": 2025, "month": 10, "category": "ルカの費用", "item": "靴下（無印）", "amount": 891}, {"id": "init0047", "year": 2025, "month": 11, "category": "ルカの費用", "item": "折り紙と本（Amazon）", "amount": 2104}, {"id": "init0048", "year": 2025, "month": 12, "category": "ルカの費用", "item": "クリスマス（楽天）", "amount": 5401}, {"id": "init0049", "year": 2025, "month": 1, "category": "ルカの費用", "item": "クリスマス袋（イオン）", "amount": 690}, {"id": "init0050", "year": 2025, "month": 2, "category": "ルカの費用", "item": "チャレンジ（ベネッセ）", "amount": 32760}, {"id": "init0051", "year": 2025, "month": 3, "category": "ルカの費用", "item": "レギンス（楽天）", "amount": 2640}, {"id": "init0052", "year": 2025, "month": 4, "category": "ルカの費用", "item": "ソレイユ（楽天）", "amount": 5600}, {"id": "init0053", "year": 2025, "month": 5, "category": "ルカの費用", "item": "きな粉（Amazon）", "amount": 2180}, {"id": "init0054", "year": 2025, "month": 6, "category": "ルカの費用", "item": "キーチェんとペン（ディズニー）", "amount": 2600}, {"id": "init0055", "year": 2025, "month": 7, "category": "ルカの費用", "item": "お土産（きのこ王国）", "amount": 1512}, {"id": "init0056", "year": 2025, "month": 8, "category": "ルカの費用", "item": "遊び場（リトルプラネット）", "amount": 1450}, {"id": "init0057", "year": 2025, "month": 9, "category": "ルカの費用", "item": "パンツ（しまむら）", "amount": 1518}, {"id": "init0058", "year": 2025, "month": 10, "category": "ルカの費用", "item": "文房具とかカレーとか（無印）", "amount": 3777}, {"id": "init0059", "year": 2025, "month": 11, "category": "ルカの費用", "item": "折り紙（Amazon）", "amount": 480}, {"id": "init0060", "year": 2025, "month": 12, "category": "ルカの費用", "item": "ハキラ（Amazon）", "amount": 600}, {"id": "init0061", "year": 2025, "month": 1, "category": "ルカの費用", "item": "本（ひしがた書店）", "amount": 2030}, {"id": "init0062", "year": 2025, "month": 3, "category": "ルカの費用", "item": "肌着（楽天）", "amount": 2000}, {"id": "init0063", "year": 2025, "month": 4, "category": "ルカの費用", "item": "日用品（ダイソー）", "amount": 881}, {"id": "init0064", "year": 2025, "month": 5, "category": "ルカの費用", "item": "せきシロップとか（サツドラ）", "amount": 3298}, {"id": "init0065", "year": 2025, "month": 6, "category": "ルカの費用", "item": "体験（くるるの杜）", "amount": 6355}, {"id": "init0066", "year": 2025, "month": 7, "category": "ルカの費用", "item": "オムツ、ボディソープ、ジュレ（サツドラ）", "amount": 4234}, {"id": "init0067", "year": 2025, "month": 8, "category": "ルカの費用", "item": "くつ、パンツ（イオン苗穂）", "amount": 5478}, {"id": "init0068", "year": 2025, "month": 9, "category": "ルカの費用", "item": "服（しまむら）", "amount": 12276}, {"id": "init0069", "year": 2025, "month": 10, "category": "ルカの費用", "item": "入場料（白い恋人パーク）", "amount": 700}, {"id": "init0070", "year": 2025, "month": 11, "category": "ルカの費用", "item": "塗り絵（Amazon）", "amount": 1868}, {"id": "init0071", "year": 2025, "month": 12, "category": "ルカの費用", "item": "おむつ（Amazon）", "amount": 1084}, {"id": "init0072", "year": 2025, "month": 1, "category": "ルカの費用", "item": "絆創膏とか（ツルハ）", "amount": 4209}, {"id": "init0073", "year": 2025, "month": 3, "category": "ルカの費用", "item": "きな粉（楽天）", "amount": 2180}, {"id": "init0074", "year": 2025, "month": 8, "category": "ルカの費用", "item": "服、パンツ（しまむら）", "amount": 6553}, {"id": "init0075", "year": 2025, "month": 9, "category": "ルカの費用", "item": "ご褒美のプリキュアのおもちゃ（ヤマダ）", "amount": 6763}, {"id": "init0076", "year": 2025, "month": 11, "category": "ルカの費用", "item": "塗り絵（Amazon）", "amount": 1699}, {"id": "init0077", "year": 2025, "month": 1, "category": "ルカの費用", "item": "雑貨（ヴィレバン）", "amount": 2257}, {"id": "init0078", "year": 2025, "month": 3, "category": "ルカの費用", "item": "服とか色々（楽天）", "amount": 7399}, {"id": "init0079", "year": 2025, "month": 8, "category": "ルカの費用", "item": "雑貨（ダイソー）", "amount": 440}, {"id": "init0080", "year": 2025, "month": 9, "category": "ルカの費用", "item": "自由帳とか（ダイソー）", "amount": 878}, {"id": "init0081", "year": 2025, "month": 11, "category": "ルカの費用", "item": "遊び場（ハングリーマート）", "amount": 2200}, {"id": "init0082", "year": 2025, "month": 1, "category": "ルカの費用", "item": "タオルケット（楽天）", "amount": 2080}, {"id": "init0083", "year": 2025, "month": 3, "category": "ルカの費用", "item": "ringoame（林檎堂）", "amount": 750}, {"id": "init0084", "year": 2025, "month": 8, "category": "ルカの費用", "item": "お絵描きセットとか（ダイソー）", "amount": 1213}, {"id": "init0085", "year": 2025, "month": 9, "category": "ルカの費用", "item": "服（しまむら）", "amount": 1639}, {"id": "init0086", "year": 2025, "month": 11, "category": "ルカの費用", "item": "靴下（ディズニー）", "amount": 1600}, {"id": "init0087", "year": 2025, "month": 1, "category": "ルカの費用", "item": "タオルケット2（楽天）", "amount": 1990}, {"id": "init0088", "year": 2025, "month": 3, "category": "ルカの費用", "item": "すみっコぐらしスタジオ（すみっコぐらしスタジオ）", "amount": 1300}, {"id": "init0089", "year": 2025, "month": 8, "category": "ルカの費用", "item": "入場料（little Planet）", "amount": 1450}, {"id": "init0090", "year": 2025, "month": 9, "category": "ルカの費用", "item": "服（しまむら）", "amount": 2420}, {"id": "init0091", "year": 2025, "month": 11, "category": "ルカの費用", "item": "写真とフレーム（上野動物園）", "amount": 2800}, {"id": "init0092", "year": 2025, "month": 1, "category": "ルカの費用", "item": "雑貨（ダイソー）", "amount": 2429}, {"id": "init0093", "year": 2025, "month": 3, "category": "ルカの費用", "item": "びっくらたまご（アカチャンホンポ）", "amount": 495}, {"id": "init0094", "year": 2025, "month": 9, "category": "ルカの費用", "item": "入館料（ニフレル）", "amount": 3500}, {"id": "init0095", "year": 2025, "month": 11, "category": "ルカの費用", "item": "飲み物（上野動物園）", "amount": 550}, {"id": "init0096", "year": 2025, "month": 1, "category": "ルカの費用", "item": "雑貨（ダイソー）", "amount": 1317}, {"id": "init0097", "year": 2025, "month": 9, "category": "ルカの費用", "item": "入場料（リポビタンキッズ）", "amount": 2700}, {"id": "init0098", "year": 2025, "month": 1, "category": "病院費", "item": "北大協済会薬局（1/17）", "amount": 1560}, {"id": "init0099", "year": 2025, "month": 2, "category": "病院費", "item": "プラム薬局（2/14）", "amount": 670}, {"id": "init0100", "year": 2025, "month": 3, "category": "病院費", "item": "なの花薬局（ルカ）（3/7）", "amount": 720}, {"id": "init0101", "year": 2025, "month": 4, "category": "病院費", "item": "プラム薬局（4/11）", "amount": 840}, {"id": "init0102", "year": 2025, "month": 5, "category": "病院費", "item": "北海道医療センター（5/21）", "amount": 2900}, {"id": "init0103", "year": 2025, "month": 6, "category": "病院費", "item": "プラム薬局（6/20）", "amount": 841}, {"id": "init0104", "year": 2025, "month": 7, "category": "病院費", "item": "フジクリニック（7/10）", "amount": 37180}, {"id": "init0105", "year": 2025, "month": 8, "category": "病院費", "item": "プラム薬局（8/8）", "amount": 1011}, {"id": "init0106", "year": 2025, "month": 9, "category": "病院費", "item": "あお心のクリニック（9/5）", "amount": 460}, {"id": "init0107", "year": 2025, "month": 10, "category": "病院費", "item": "プラム薬局（10/3）", "amount": 880}, {"id": "init0108", "year": 2025, "month": 11, "category": "病院費", "item": "プラム薬局（11/28）", "amount": 780}, {"id": "init0109", "year": 2025, "month": 12, "category": "病院費", "item": "いそべ（12/20）", "amount": 1300}, {"id": "init0110", "year": 2025, "month": 1, "category": "病院費", "item": "マタニティウィメンズホスピタル（1/17）", "amount": 1400}, {"id": "init0111", "year": 2025, "month": 2, "category": "病院費", "item": "あお心のクリニック（2/14）", "amount": 900}, {"id": "init0112", "year": 2025, "month": 3, "category": "病院費", "item": "菊池皮膚科（3/7）", "amount": 870}, {"id": "init0113", "year": 2025, "month": 4, "category": "病院費", "item": "あお心のクリニック（4/11）", "amount": 470}, {"id": "init0114", "year": 2025, "month": 5, "category": "病院費", "item": "プラム薬局（5/16）", "amount": 740}, {"id": "init0115", "year": 2025, "month": 6, "category": "病院費", "item": "あお心のクリニック（6/20）", "amount": 450}, {"id": "init0116", "year": 2025, "month": 7, "category": "病院費", "item": "プラム薬局（7/15）", "amount": 661}, {"id": "init0117", "year": 2025, "month": 8, "category": "病院費", "item": "あお心のクリニック（8/8）", "amount": 460}, {"id": "init0118", "year": 2025, "month": 9, "category": "病院費", "item": "プラム薬局（9/5）", "amount": 890}, {"id": "init0119", "year": 2025, "month": 10, "category": "病院費", "item": "あお心のクリニック（10/3）", "amount": 460}, {"id": "init0120", "year": 2025, "month": 11, "category": "病院費", "item": "あお心のクリニック（11/28）", "amount": 470}, {"id": "init0121", "year": 2025, "month": 12, "category": "病院費", "item": "リードオレンジ薬局（12/20）", "amount": 5230}, {"id": "init0122", "year": 2025, "month": 1, "category": "病院費", "item": "マタニティウィメンズホスピタル（1/17）", "amount": 1770}, {"id": "init0123", "year": 2025, "month": 2, "category": "病院費", "item": "えるむの木（ルカ）（2/7）", "amount": 1910}, {"id": "init0124", "year": 2025, "month": 3, "category": "病院費", "item": "あお心のクリニック（3/14）", "amount": 470}, {"id": "init0125", "year": 2025, "month": 5, "category": "病院費", "item": "あお心のクリニック（5/16）", "amount": 450}, {"id": "init0126", "year": 2025, "month": 6, "category": "病院費", "item": "えるむの木（ルカ）（6/13）", "amount": 1980}, {"id": "init0127", "year": 2025, "month": 7, "category": "病院費", "item": "あお心のクリニック（7/15）", "amount": 460}, {"id": "init0128", "year": 2025, "month": 8, "category": "病院費", "item": "えるむの木（ルカ）（8/8）", "amount": 2430}, {"id": "init0129", "year": 2025, "month": 9, "category": "病院費", "item": "小林皮膚科（9/5）", "amount": 1080}, {"id": "init0130", "year": 2025, "month": 10, "category": "病院費", "item": "いそべ（10/16）", "amount": 1100}, {"id": "init0131", "year": 2025, "month": 11, "category": "病院費", "item": "あお心のクリニック（11/28）", "amount": 5060}, {"id": "init0132", "year": 2025, "month": 12, "category": "病院費", "item": "プラム薬局（12/26）", "amount": 930}, {"id": "init0133", "year": 2025, "month": 1, "category": "病院費", "item": "プラム薬局（1/17）", "amount": 780}, {"id": "init0134", "year": 2025, "month": 3, "category": "病院費", "item": "プラム薬局（3/14）", "amount": 690}, {"id": "init0135", "year": 2025, "month": 5, "category": "病院費", "item": "えるむの木（ルカ）（5/9）", "amount": 2320}, {"id": "init0136", "year": 2025, "month": 7, "category": "病院費", "item": "なの花薬局（7/3）", "amount": 750}, {"id": "init0137", "year": 2025, "month": 8, "category": "病院費", "item": "いそべ（8/21）", "amount": 12120}, {"id": "init0138", "year": 2025, "month": 9, "category": "病院費", "item": "北大協済会薬局（9/5）", "amount": 1210}, {"id": "init0139", "year": 2025, "month": 10, "category": "病院費", "item": "いそべ（10/16）", "amount": 3470}, {"id": "init0140", "year": 2025, "month": 11, "category": "病院費", "item": "ナカジマ薬局（11/25）", "amount": 480}, {"id": "init0141", "year": 2025, "month": 12, "category": "病院費", "item": "あお心のクリニック（12/26）", "amount": 470}, {"id": "init0142", "year": 2025, "month": 1, "category": "病院費", "item": "あお心のクリニック（1/17）", "amount": 470}, {"id": "init0143", "year": 2025, "month": 7, "category": "病院費", "item": "菊池皮膚科（7/3）", "amount": 1160}, {"id": "init0144", "year": 2025, "month": 8, "category": "病院費", "item": "リードオレンジ薬局（8/21）", "amount": 1410}, {"id": "init0145", "year": 2025, "month": 10, "category": "病院費", "item": "リードオレンジ薬局（10/16）", "amount": 4641}, {"id": "init0146", "year": 2025, "month": 11, "category": "病院費", "item": "リードオレンジ薬局（11/21）", "amount": 6701}, {"id": "init0147", "year": 2025, "month": 1, "category": "病院費", "item": "プラム薬局（12/20）", "amount": 690}, {"id": "init0148", "year": 2025, "month": 7, "category": "病院費", "item": "なの花薬局（ルカ）（7/3）", "amount": 730}, {"id": "init0149", "year": 2025, "month": 10, "category": "病院費", "item": "えるむの木（ルカ）（10/24）", "amount": 2810}, {"id": "init0150", "year": 2025, "month": 11, "category": "病院費", "item": "いそべ（11/21）", "amount": 1300}, {"id": "init0151", "year": 2025, "month": 1, "category": "病院費", "item": "あお心のクリニック（12/20）", "amount": 470}, {"id": "init0152", "year": 2025, "month": 7, "category": "病院費", "item": "菊池皮膚科（ルカ）（7/3）", "amount": 850}, {"id": "init0153", "year": 2025, "month": 10, "category": "病院費", "item": "あお心のクリニック（10/30）", "amount": 460}, {"id": "init0154", "year": 2025, "month": 11, "category": "病院費", "item": "あんよオンライン（ルカ）（11/25）", "amount": 480}, {"id": "init0155", "year": 2025, "month": 1, "category": "病院費", "item": "みらくる薬局北２５（12/26）", "amount": 990}, {"id": "init0156", "year": 2025, "month": 10, "category": "病院費", "item": "プラム薬局（10/30）", "amount": 910}, {"id": "init0157", "year": 2025, "month": 1, "category": "病院費", "item": "さとう小児科（12/26）", "amount": 11220}, {"id": "init0158", "year": 2025, "month": 1, "category": "外食費", "item": "びくどん", "amount": 1745}, {"id": "init0159", "year": 2025, "month": 2, "category": "外食費", "item": "はなまるうどん", "amount": 1650}, {"id": "init0160", "year": 2025, "month": 5, "category": "外食費", "item": "びっくりドンキー", "amount": 2047}, {"id": "init0161", "year": 2025, "month": 6, "category": "外食費", "item": "ロイヤルホスト", "amount": 2409}, {"id": "init0162", "year": 2025, "month": 7, "category": "外食費", "item": "ニセコ昼（WHITE BIRCH CAFE）", "amount": 1820}, {"id": "init0163", "year": 2025, "month": 8, "category": "外食費", "item": "エスコン", "amount": 1380}, {"id": "init0164", "year": 2025, "month": 9, "category": "外食費", "item": "ユナイテッド・シネマ", "amount": 1180}, {"id": "init0165", "year": 2025, "month": 11, "category": "外食費", "item": "上野動物園", "amount": 2160}, {"id": "init0166", "year": 2025, "month": 5, "category": "外食費", "item": "ミルクインブレッド", "amount": 1545}, {"id": "init0167", "year": 2025, "month": 11, "category": "外食費", "item": "びっくりドンキー", "amount": 3030}, {"id": "init0168", "year": 2025, "month": 11, "category": "外食費", "item": "クラーク亭", "amount": 3170}, {"id": "init0169", "year": 2025, "month": 1, "category": "食材費", "item": "アークス", "amount": 1597}, {"id": "init0170", "year": 2025, "month": 2, "category": "食材費", "item": "コープ", "amount": 4209}, {"id": "init0171", "year": 2025, "month": 3, "category": "食材費", "item": "アーくす", "amount": 552}, {"id": "init0172", "year": 2025, "month": 5, "category": "食材費", "item": "ローソン", "amount": 1470}, {"id": "init0173", "year": 2025, "month": 6, "category": "食材費", "item": "パン（笑くぼ）", "amount": 480}, {"id": "init0174", "year": 2025, "month": 7, "category": "食材費", "item": "はちみつ（セブン）", "amount": 298}, {"id": "init0175", "year": 2025, "month": 8, "category": "食材費", "item": "ご飯（エスコン）", "amount": 1380}, {"id": "init0176", "year": 2025, "month": 9, "category": "食材費", "item": "セブン", "amount": 334}, {"id": "init0177", "year": 2025, "month": 10, "category": "食材費", "item": "東光ストア", "amount": 1444}, {"id": "init0178", "year": 2025, "month": 11, "category": "食材費", "item": "アークス", "amount": 770}, {"id": "init0179", "year": 2025, "month": 12, "category": "食材費", "item": "セブン", "amount": 759}, {"id": "init0180", "year": 2025, "month": 1, "category": "食材費", "item": "ディナべ", "amount": 5191}, {"id": "init0181", "year": 2025, "month": 2, "category": "食材費", "item": "どんぐり", "amount": 714}, {"id": "init0182", "year": 2025, "month": 5, "category": "食材費", "item": "コープ", "amount": 3472}, {"id": "init0183", "year": 2025, "month": 6, "category": "食材費", "item": "ダイイチ", "amount": 1838}, {"id": "init0184", "year": 2025, "month": 7, "category": "食材費", "item": "コープ", "amount": 2154}, {"id": "init0185", "year": 2025, "month": 8, "category": "食材費", "item": "コープ", "amount": 4006}, {"id": "init0186", "year": 2025, "month": 9, "category": "食材費", "item": "ホクレン", "amount": 578}, {"id": "init0187", "year": 2025, "month": 10, "category": "食材費", "item": "コープ", "amount": 613}, {"id": "init0188", "year": 2025, "month": 11, "category": "食材費", "item": "アークス", "amount": 572}, {"id": "init0189", "year": 2025, "month": 12, "category": "食材費", "item": "セブン", "amount": 1886}, {"id": "init0190", "year": 2025, "month": 1, "category": "食材費", "item": "食材と風邪グッズ（ツルハ）", "amount": 5491}, {"id": "init0191", "year": 2025, "month": 2, "category": "食材費", "item": "どんぐり", "amount": 600}, {"id": "init0192", "year": 2025, "month": 5, "category": "食材費", "item": "根室の店", "amount": 2638}, {"id": "init0193", "year": 2025, "month": 6, "category": "食材費", "item": "ローソン", "amount": 1929}, {"id": "init0194", "year": 2025, "month": 7, "category": "食材費", "item": "セブン", "amount": 1043}, {"id": "init0195", "year": 2025, "month": 8, "category": "食材費", "item": "コープ", "amount": 3738}, {"id": "init0196", "year": 2025, "month": 10, "category": "食材費", "item": "コストコ", "amount": 7064}, {"id": "init0197", "year": 2025, "month": 1, "category": "食材費", "item": "イオン", "amount": 1364}, {"id": "init0198", "year": 2025, "month": 2, "category": "食材費", "item": "コストコ", "amount": 19438}, {"id": "init0199", "year": 2025, "month": 5, "category": "食材費", "item": "マックスバリュ", "amount": 2877}, {"id": "init0200", "year": 2025, "month": 6, "category": "食材費", "item": "まいばす", "amount": 4758}, {"id": "init0201", "year": 2025, "month": 8, "category": "食材費", "item": "ディナべ", "amount": 1086}, {"id": "init0202", "year": 2025, "month": 1, "category": "食材費", "item": "コープ", "amount": 1449}, {"id": "init0203", "year": 2025, "month": 5, "category": "食材費", "item": "ディナべ", "amount": 3336}, {"id": "init0204", "year": 2025, "month": 6, "category": "食材費", "item": "ローソん", "amount": 482}, {"id": "init0205", "year": 2025, "month": 8, "category": "食材費", "item": "食パン（セブン）", "amount": 221}, {"id": "init0206", "year": 2025, "month": 1, "category": "食材費", "item": "コープ", "amount": 2105}, {"id": "init0207", "year": 2025, "month": 6, "category": "食材費", "item": "くるるのもり", "amount": 6355}, {"id": "init0208", "year": 2025, "month": 1, "category": "食材費", "item": "まいばす", "amount": 2288}, {"id": "init0209", "year": 2025, "month": 1, "category": "食材費", "item": "ローソン", "amount": 260}, {"id": "init0210", "year": 2025, "month": 2, "category": "交通費", "item": "ガソリン（コストコ）", "amount": 3553}, {"id": "init0211", "year": 2025, "month": 7, "category": "交通費", "item": "ガソリン（エネオス）", "amount": 3884}, {"id": "init0212", "year": 2025, "month": 8, "category": "交通費", "item": "ガソリン（エネオス）", "amount": 4819}, {"id": "init0213", "year": 2025, "month": 9, "category": "交通費", "item": "駐車（エスコン）", "amount": 500}, {"id": "init0214", "year": 2025, "month": 10, "category": "交通費", "item": "ガソリン（コストコ）", "amount": 3287}, {"id": "init0215", "year": 2025, "month": 12, "category": "交通費", "item": "駐車（ちょいおきパーキング）", "amount": 1000}, {"id": "init0216", "year": 2025, "month": 7, "category": "交通費", "item": "ガソリン（エネオス）", "amount": 3454}, {"id": "init0217", "year": 2025, "month": 9, "category": "交通費", "item": "ガソリン（エネオス）", "amount": 4088}, {"id": "init0218", "year": 2025, "month": 9, "category": "交通費", "item": "ガソリン（エネオス）", "amount": 3844}, {"id": "init0219", "year": 2025, "month": 9, "category": "交通費", "item": "タクシー（根室）", "amount": 2700}, {"id": "init0220", "year": 2025, "month": 1, "category": "その他", "item": "サク手土産（森彦）", "amount": 3872}, {"id": "init0221", "year": 2025, "month": 2, "category": "その他", "item": "ねこブラッシングマシーン（楽天）", "amount": 15800}, {"id": "init0222", "year": 2025, "month": 3, "category": "その他", "item": "りなさん手土産（四季マルシェ）", "amount": 3543}, {"id": "init0223", "year": 2025, "month": 4, "category": "その他", "item": "日用品（ツルハ）", "amount": 361}, {"id": "init0224", "year": 2025, "month": 5, "category": "その他", "item": "風邪薬（ツルハ）", "amount": 5533}, {"id": "init0225", "year": 2025, "month": 7, "category": "その他", "item": "日用品（ダイソー）", "amount": 1090}, {"id": "init0226", "year": 2025, "month": 8, "category": "その他", "item": "車のサンシェード（楽天）", "amount": 2950}, {"id": "init0227", "year": 2025, "month": 9, "category": "その他", "item": "万博（チケット）", "amount": 6000}, {"id": "init0228", "year": 2025, "month": 10, "category": "その他", "item": "タオル（楽天）", "amount": 1080}, {"id": "init0229", "year": 2025, "month": 11, "category": "その他", "item": "雑貨（IKEA）", "amount": 2273}, {"id": "init0230", "year": 2025, "month": 12, "category": "その他", "item": "入場料（海中公園）", "amount": 1000}, {"id": "init0231", "year": 2025, "month": 1, "category": "その他", "item": "義実家手土産（もりもと）", "amount": 1790}, {"id": "init0232", "year": 2025, "month": 2, "category": "その他", "item": "スポンジ（楽天）", "amount": 1000}, {"id": "init0233", "year": 2025, "month": 3, "category": "その他", "item": "りなさん手土産（中川政七商店）", "amount": 1320}, {"id": "init0234", "year": 2025, "month": 7, "category": "その他", "item": "食べ物、日用品（ツルハ）", "amount": 2957}, {"id": "init0235", "year": 2025, "month": 8, "category": "その他", "item": "車のサンシェード2（楽天）", "amount": 1600}, {"id": "init0236", "year": 2025, "month": 10, "category": "その他", "item": "洗剤・日用品（ツルハ）", "amount": 8613}, {"id": "init0237", "year": 2025, "month": 11, "category": "その他", "item": "子供達の雑貨（ダイソー）", "amount": 976}, {"id": "init0238", "year": 2025, "month": 1, "category": "その他", "item": "日用品（ツルハ）", "amount": 3629}, {"id": "init0239", "year": 2025, "month": 2, "category": "その他", "item": "義実家手土産（アンティーク）", "amount": 1590}, {"id": "init0240", "year": 2025, "month": 7, "category": "その他", "item": "義実家手土産（スタバ）", "amount": 3300}, {"id": "init0241", "year": 2025, "month": 8, "category": "その他", "item": "日用品、インゼリーなど（ツルハ）", "amount": 3191}, {"id": "init0242", "year": 2025, "month": 1, "category": "その他", "item": "日用品（ツルハ）", "amount": 8418}, {"id": "init0243", "year": 2025, "month": 8, "category": "その他", "item": "バンドエイドなど（ツルハ）", "amount": 3403}, {"id": "init0244", "year": 2025, "month": 1, "category": "その他", "item": "義実家手土産（いそべ）", "amount": 1700}, {"id": "init0245", "year": 2025, "month": 1, "category": "その他", "item": "義実家手土産（アンティーク）", "amount": 2085}];
+      localStorage.setItem('kakeibo_entries', JSON.stringify(initialData));
+    }
+  })();
+  initInputForm();
+  renderRecent();
+</script>
+</body>
+</html>

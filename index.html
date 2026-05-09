@@ -398,6 +398,97 @@
     @media (max-width: 400px) {
       .input-row { grid-template-columns: 1fr; }
     }
+
+    /* バックアップ通知バナー */
+    .backup-banner {
+      display: none;
+      position: fixed;
+      bottom: 14px;
+      left: 14px;
+      right: 14px;
+      max-width: 572px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #FFE680, #FFC23A);
+      border: 1.5px solid #E67700;
+      padding: 12px 14px;
+      border-radius: 16px;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #5A3A00;
+      z-index: 90;
+      box-shadow: 0 6px 20px rgba(230,119,0,0.30);
+      animation: bannerSlide 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .backup-banner.show { display: flex; }
+    @keyframes bannerSlide {
+      from { transform: translateY(20px); opacity: 0; }
+      to   { transform: translateY(0);     opacity: 1; }
+    }
+    .backup-banner-icon { font-size: 22px; flex-shrink: 0; }
+    .backup-banner-msg { flex: 1; line-height: 1.35; }
+    .backup-banner-msg small { display: block; font-weight: 500; opacity: 0.75; font-size: 11px; margin-top: 2px; }
+    .backup-banner-btn {
+      background: #5A3A00;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 50px;
+      font-weight: 800;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      flex-shrink: 0;
+    }
+    .backup-banner-btn:active { opacity: 0.8; }
+    .backup-banner-close {
+      background: transparent;
+      border: none;
+      color: #5A3A00;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0 4px;
+      opacity: 0.6;
+      flex-shrink: 0;
+    }
+
+    /* バックアップカード（設定ページ内） */
+    .backup-status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px dashed #FFE680;
+      font-size: 13px;
+    }
+    .backup-status-row:last-of-type { border-bottom: none; }
+    .backup-status-label { color: var(--muted); font-weight: 600; }
+    .backup-status-value { font-weight: 700; color: var(--text); }
+    .backup-status-value.warn { color: #E67700; }
+    .backup-actions { display: flex; gap: 10px; margin-top: 14px; }
+    .backup-actions .btn { flex: 1; }
+    .btn-secondary {
+      background: white;
+      color: var(--accent);
+      border: 1.5px solid var(--primary);
+      padding: 10px 14px;
+      border-radius: 50px;
+      font-size: 13px;
+      font-weight: 800;
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      cursor: pointer;
+    }
+    .btn-secondary:active { opacity: 0.8; }
+    .backup-help {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 12px;
+      line-height: 1.6;
+      background: #FFFBEE;
+      padding: 10px 12px;
+      border-radius: 10px;
+    }
   </style>
 </head>
 <body>
@@ -485,10 +576,40 @@
   </div>
 
   <div class="card">
+    <h2>💾 バックアップ・復元</h2>
+    <div class="backup-status-row">
+      <span class="backup-status-label">前回のバックアップ</span>
+      <span class="backup-status-value" id="backupStatusLast">—</span>
+    </div>
+    <div class="backup-status-row">
+      <span class="backup-status-label">未保存の変更</span>
+      <span class="backup-status-value" id="backupStatusUnbacked">—</span>
+    </div>
+    <div class="backup-actions">
+      <button class="btn btn-primary" onclick="exportBackup()">📥 保存</button>
+      <button class="btn-secondary" onclick="document.getElementById('importFileInput').click()">📤 復元</button>
+    </div>
+    <input type="file" id="importFileInput" accept="application/json,.json" style="display:none" onchange="importBackup(this)">
+    <div class="backup-help">
+      💡 「保存」を押すとJSONファイルがダウンロードされます。<strong>iOSでは保存先に「ファイル」アプリの「iCloud Drive」を選ぶ</strong>とSafariのデータ消去でも消えません。「復元」で同ファイルから復元できます。
+    </div>
+  </div>
+
+  <div class="card">
     <h2>🗑️ データ管理</h2>
     <p style="font-size:13px;color:var(--muted);margin-bottom:12px">全データを削除します。この操作は元に戻せません。</p>
     <button class="btn btn-danger" onclick="clearAllData()">全データを削除</button>
   </div>
+</div>
+
+<div class="backup-banner" id="backupBanner">
+  <span class="backup-banner-icon">💾</span>
+  <div class="backup-banner-msg">
+    <span id="backupBannerMsg">バックアップしましょう</span>
+    <small>iCloud Driveに保存すれば消えません</small>
+  </div>
+  <button class="backup-banner-btn" onclick="exportBackup()">保存</button>
+  <button class="backup-banner-close" onclick="dismissBackupBanner()" aria-label="閉じる">×</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -518,6 +639,7 @@
 
   function saveData(entries) {
     localStorage.setItem('kakeibo_entries', JSON.stringify(entries));
+    markChanged();
   }
 
   function getCategories() {
@@ -527,6 +649,7 @@
 
   function saveCategories(cats) {
     localStorage.setItem('kakeibo_categories', JSON.stringify(cats));
+    markChanged();
   }
 
   function generateId() {
@@ -773,6 +896,7 @@
         <button onclick="removeCategory('${escHtml(c)}')" title="削除">×</button>
       </span>
     `).join('');
+    renderBackupCard();
   }
 
   function addCategory() {
@@ -800,8 +924,157 @@
   function clearAllData() {
     if (!confirm('本当に全データを削除しますか？この操作は元に戻せません。')) return;
     localStorage.removeItem('kakeibo_entries');
+    markChanged();
     showToast('全データを削除しました');
     renderSettings();
+  }
+
+  // ---- Backup ----
+  const BACKUP_VERSION = 1;
+
+  function markChanged() {
+    const count = parseInt(localStorage.getItem('kakeibo_unbackedCount') || '0', 10) + 1;
+    localStorage.setItem('kakeibo_unbackedCount', String(count));
+    sessionStorage.removeItem('kakeibo_bannerDismissed');
+    updateBackupBanner();
+    if (document.getElementById('page-settings').classList.contains('active')) {
+      renderBackupCard();
+    }
+  }
+
+  function getBackupStatus() {
+    return {
+      lastBackupAt: localStorage.getItem('kakeibo_lastBackupAt'),
+      unbackedCount: parseInt(localStorage.getItem('kakeibo_unbackedCount') || '0', 10)
+    };
+  }
+
+  function exportBackup() {
+    const data = {
+      version: BACKUP_VERSION,
+      exportedAt: new Date().toISOString(),
+      entries: getData(),
+      categories: getCategories()
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const ts = new Date().toISOString().slice(0, 16).replace(/[:-]/g, '').replace('T', '_');
+    a.download = `kakeibo_backup_${ts}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    localStorage.setItem('kakeibo_lastBackupAt', new Date().toISOString());
+    localStorage.setItem('kakeibo_unbackedCount', '0');
+    sessionStorage.removeItem('kakeibo_bannerDismissed');
+    updateBackupBanner();
+    renderBackupCard();
+    showToast('バックアップを保存しました');
+  }
+
+  function importBackup(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!data || !Array.isArray(data.entries)) {
+          showToast('無効なバックアップファイルです');
+          input.value = '';
+          return;
+        }
+        const incoming = data.entries;
+        const existing = getData();
+        const mode = confirm(
+          `読み込み件数: ${incoming.length}件\n現在の件数: ${existing.length}件\n\n` +
+          `[OK] 上書きで復元（現在のデータを置き換え）\n` +
+          `[キャンセル] マージで復元（同じIDは上書き、無いものは追加）`
+        );
+        let final;
+        if (mode) {
+          final = incoming;
+        } else {
+          const map = new Map(existing.map(e => [e.id, e]));
+          incoming.forEach(e => map.set(e.id, e));
+          final = Array.from(map.values());
+        }
+        localStorage.setItem('kakeibo_entries', JSON.stringify(final));
+        if (Array.isArray(data.categories)) {
+          localStorage.setItem('kakeibo_categories', JSON.stringify(data.categories));
+        }
+        localStorage.setItem('kakeibo_lastBackupAt', data.exportedAt || new Date().toISOString());
+        localStorage.setItem('kakeibo_unbackedCount', '0');
+        sessionStorage.removeItem('kakeibo_bannerDismissed');
+        showToast(`復元完了: ${final.length}件`);
+        input.value = '';
+        setTimeout(() => location.reload(), 800);
+      } catch (e) {
+        showToast('読み込み失敗: ' + e.message);
+        input.value = '';
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function updateBackupBanner() {
+    const banner = document.getElementById('backupBanner');
+    if (!banner) return;
+    const { lastBackupAt, unbackedCount } = getBackupStatus();
+    const hasEntries = getData().length > 0;
+    const dismissed = sessionStorage.getItem('kakeibo_bannerDismissed') === '1';
+    const needsBackup = (!lastBackupAt && hasEntries) || unbackedCount > 0;
+    if (needsBackup && !dismissed) {
+      const msg = !lastBackupAt
+        ? 'まだバックアップしていません'
+        : `${unbackedCount}件の変更が未保存です`;
+      document.getElementById('backupBannerMsg').textContent = msg;
+      banner.classList.add('show');
+    } else {
+      banner.classList.remove('show');
+    }
+  }
+
+  function dismissBackupBanner() {
+    sessionStorage.setItem('kakeibo_bannerDismissed', '1');
+    document.getElementById('backupBanner').classList.remove('show');
+  }
+
+  function renderBackupCard() {
+    const { lastBackupAt, unbackedCount } = getBackupStatus();
+    const lastEl = document.getElementById('backupStatusLast');
+    const unbackedEl = document.getElementById('backupStatusUnbacked');
+    if (!lastEl || !unbackedEl) return;
+
+    if (lastBackupAt) {
+      const d = new Date(lastBackupAt);
+      const diffMs = Date.now() - d.getTime();
+      const diffMin = Math.floor(diffMs / 60000);
+      const diffHr = Math.floor(diffMin / 60);
+      const diffDay = Math.floor(diffHr / 24);
+      let rel;
+      if (diffMin < 1) rel = 'たった今';
+      else if (diffMin < 60) rel = `${diffMin}分前`;
+      else if (diffHr < 24) rel = `${diffHr}時間前`;
+      else rel = `${diffDay}日前`;
+      lastEl.textContent = `${d.toLocaleDateString('ja-JP')} ${d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}（${rel}）`;
+      lastEl.classList.toggle('warn', diffDay >= 7);
+    } else {
+      lastEl.textContent = 'まだ実行していません';
+      lastEl.classList.add('warn');
+    }
+
+    if (unbackedCount === 0) {
+      unbackedEl.textContent = '✓ すべて保存済み';
+      unbackedEl.classList.remove('warn');
+    } else {
+      unbackedEl.textContent = `${unbackedCount}件`;
+      unbackedEl.classList.add('warn');
+    }
   }
 
   // ---- Export ----
@@ -839,6 +1112,7 @@
   })();
   initInputForm();
   renderRecent();
+  updateBackupBanner();
 </script>
 </body>
 </html>
